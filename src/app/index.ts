@@ -5,25 +5,39 @@ import cors from "cors";
 import express from "express";
 import { GraphqlContext } from "../interfaces";
 import JWTService from "../services/jwt";
+import { Tweet } from "./tweet";
 import { User } from "./user";
 
-export async function intializeServer() {
+export async function initServer() {
   const app = express();
   app.use(bodyParser.json());
   app.use(cors());
-  const typeDefs = `
-  ${User.types}
-    type Query {
-    ${User.queries}
-    }
-  `;
 
-  const resolvers = {
-    Query: {
-      ...User.resolvers.queries,
+  const server = new ApolloServer<GraphqlContext>({
+    typeDefs: `
+       ${User.types}
+       ${Tweet.types}
+       
+        type Query {
+            ${User.queries}
+            ${Tweet.queries}
+        }
+        type Mutation {
+          ${Tweet.muatations}
+        }
+    `,
+    resolvers: {
+      Query: {
+        ...User.resolvers.queries,
+        ...Tweet.resolvers.queries,
+      },
+      Mutation: {
+        ...Tweet.resolvers.mutations,
+      },
+      ...Tweet.resolvers.extraResolvers,
+      ...User.resolvers.extraResolvers,
     },
-  };
-  const server = new ApolloServer<GraphqlContext>({ typeDefs, resolvers });
+  });
   await server.start();
   app.use(
     "/graphql",
